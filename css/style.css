@@ -1,5 +1,46 @@
+body {
+	font-family: "Lucida Console", Monaco, monospace;
+}
+
 canvas {
 	position: fixed;
 	top: 0;
 	left: 0;
+}
+
+#instructions {
+	position: relative;
+	display: block;
+	top: 100px;
+	width: 200px;
+	margin-left: auto;
+	margin-right: auto;
+	z-index: 2000;
+	color: #dddddd;
+	text-shadow: 0px 0px 2px #222222;
+	cursor: pointer;
+}
+
+#madeby {
+	position: absolute;
+	/*display: block;*/
+	bottom: 5px;
+	right: 20px;
+	font-size: 80%;
+/*	width: 200px;
+	margin-left: auto;
+	margin-right: auto;*/
+	z-index: 2000;
+	color: #dddddd;
+	text-shadow: 0px 0px 1px #222222;
+}
+
+#madeby a{
+	color: #dddddd;
+	font-weight: bold;
+	text-decoration: none;
+}
+
+#madeby a:hover {
+	text-shadow: 0px 0px 2px #222222;
 }

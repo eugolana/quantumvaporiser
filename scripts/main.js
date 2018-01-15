@@ -5,6 +5,8 @@ var audioContext = new (window.AudioContext || window.webkitAudioContext);
 
 var masterGain = audioContext.createGain();
 
+var player;
+
 var analyser = audioContext.createAnalyser();
 masterGain.connect(analyser);
 analyser.connect(audioContext.destination);
@@ -32,6 +34,7 @@ var handleDrop = function(e) {
         reader.addEventListener('load', function(e) {
             var data = e.target.result;
             audioContext.decodeAudioData(data, function(buffer) {
+            	document.getElementById('instructions').remove();
                 playSound(buffer);
             })
         })
@@ -44,7 +47,10 @@ var playSound = function(buffer) {
     source.buffer = buffer;
     source.connect(analyser);
     source.start(0);
+    player = source;
 }
+
+var stop
 
 const spectrum = new Uint8Array(analyser.frequencyBinCount);
 
@@ -205,7 +211,7 @@ function render() {
 	var delta = clock.getDelta();
 	uniforms.a1.value = Math.pow(bass, 2) / 4;
 	uniforms.a2.value = Math.pow(mids, 2) / 2;
-	uniforms.a3.value = Math.pow(treble, 2) * 4;
+	uniforms.a3.value = Math.pow(treble, 2) * 2;
 
 	uniforms.a4.value = mids;
 	sphere.rotation.y -= treble/10;

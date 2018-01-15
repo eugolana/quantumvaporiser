@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html>
 	<head>
+
+
+		<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+		<meta content="utf-8" http-equiv="encoding">
+		<title>Quantum Vaporiser</title>
 		    <link rel="stylesheet" href="./css/style.css">
 		    <script id="simpleVertexShader" type="x-shader/x-vertex">
 		    	uniform float time;
@@ -170,7 +175,7 @@
 				}
 
 				void main() {
-					vec3 cloudColor = vec3(1., 1., 1.);
+					vec3 cloudColor = vec3(0.9, 0.9, 0.9);
 				    vec2 st = vUv;
 				    vec3 color = skyColor;
 				    vec2 timeshift = vec2(time * 0.04,0);
@@ -193,6 +198,12 @@
 	</head>
 	<body>
 		<canvas id="myCanvas"></canvas>
-		    <script src="./scripts/main.js"></script>
+		<script src="./scripts/main.js"></script>
+		<div id="instructions">
+			<p>Drag and drop an audio file into the browser to start.</p>
+		</div>
+		<div id="madeby">
+			<p>made by <a href="http://eugolana.com">eugolana</a>.</p>
+		</div>
 	</body>
 </html>
