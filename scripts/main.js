@@ -160,14 +160,24 @@ scene.add(skySphere);
 // Add Floor
 var floorGeometry = new THREE.BoxGeometry(700,5,700)
 
-var floorMaterial = new THREE.ShaderMaterial({
+var checkedMaterial = new THREE.ShaderMaterial({
 	uniforms: skyUniforms,
 	vertexShader: document.getElementById('simpleVertexShader').innerHTML,
 	fragmentShader: document.getElementById('checkedShader').innerHTML,
 })
 
+var simpleMaterial = new THREE.MeshBasicMaterial({color: 0x444444});
 
-var floorbox = new THREE.Mesh(floorGeometry, floorMaterial);
+var floorMaterials = [
+	simpleMaterial,
+	simpleMaterial,
+	checkedMaterial,
+	simpleMaterial,
+	simpleMaterial,
+	simpleMaterial,
+]
+
+var floorbox = new THREE.Mesh(floorGeometry, floorMaterials);
 floorbox.position.y -= 150;
 scene.add(floorbox)
 
@@ -191,9 +201,9 @@ function render() {
 
  	analyser.getByteFrequencyData(spectrum)
 	var delta = clock.getDelta();
-	uniforms.a1.value = Math.pow(bass, 2) / 3;
-	uniforms.a2.value = Math.pow(mids, 2);
-	uniforms.a3.value = Math.pow(treble, 2) * 8;
+	uniforms.a1.value = Math.pow(bass, 2) / 4;
+	uniforms.a2.value = Math.pow(mids, 2) / 2;
+	uniforms.a3.value = Math.pow(treble, 2) * 4;
 
 	uniforms.a4.value = mids;
 	sphere.rotation.y -= treble/10;
