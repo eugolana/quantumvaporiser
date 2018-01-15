@@ -11,6 +11,9 @@ var analyser = audioContext.createAnalyser();
 masterGain.connect(analyser);
 analyser.connect(audioContext.destination);
 
+var lon = 15, lat = 15;
+var phi = 0, theta = 0;		
+
 
 window.addEventListener('load', function() {
     var dropzone = document.querySelector('#myCanvas');
@@ -97,9 +100,9 @@ sphereCamera.renderTarget.texture.minFilter = THREE.LinearFilter ;
 
 scene.add( sphereCamera );
 
-sphereCamera.position.x = 100;
-sphereCamera.position.y = 100;
-sphereCamera.position.z = 100;
+// sphereCamera.position.x = 100;
+// sphereCamera.position.y = 100;
+// sphereCamera.position.z = 100;
 
 
 var sphereMaterial = new THREE.MeshPhongMaterial({ 
@@ -116,7 +119,7 @@ var sphereMaterial = new THREE.MeshPhongMaterial({
 var sphereCameraMaterial = new THREE.MeshBasicMaterial({
 	envMap: sphereCamera.renderTarget.texture,
 	transparent: true,
-	opacity: 0.4
+	opacity: 0.7
 })
 
 var sphereMaterials = [sphereCameraMaterial, sphereMaterial, waveShader];
@@ -205,7 +208,9 @@ function render() {
 	mids = sumSpectrum(spectrum.subarray(64, 512))/255;
 	treble = sumSpectrum(spectrum.subarray(512, 1024))/255
 
+	sphere.visible = false;
 	sphereCamera.update( renderer, scene );
+	sphere.visible = true;
 
  	analyser.getByteFrequencyData(spectrum)
 	var delta = clock.getDelta();
@@ -223,6 +228,17 @@ function render() {
 	delta *= bass/ 100000;
 	uniforms.time.value += delta;
 
+	lat = Math.max( - 85, Math.min( 85, lat ) );
+	phi = THREE.Math.degToRad( 90 - lat );
+	theta = THREE.Math.degToRad( lon );
+	camera.position.x = 900 * Math.sin( phi ) * Math.cos( theta );
+	camera.position.y = 900 * Math.cos( phi );
+	camera.position.z = 900 * Math.sin( phi ) * Math.sin( theta );
+
+	camera.lookAt( sphere.position )
+
+
+
 	renderer.render(scene, camera);
 
 	requestAnimationFrame(render);
@@ -239,3 +255,57 @@ function sumSpectrum(spec){
 function add(a, b){
 	return a + b;
 }
+
+
+// Mouse controls Borrowed frm https://threejs.org/examples/webgl_materials_cubemap_dynamic2.html
+function onWindowResized( event ) {
+
+	renderer.setSize( window.innerWidth, window.innerHeight );
+
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+
+}
+
+function onDocumentMouseDown( event ) {
+
+	event.preventDefault();
+
+	onPointerDownPointerX = event.clientX;
+	onPointerDownPointerY = event.clientY;
+
+	onPointerDownLon = lon;
+	onPointerDownLat = lat;
+
+	document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+	document.addEventListener( 'mouseup', onDocumentMouseUp, false );
+
+}
+
+function onDocumentMouseMove( event ) {
+
+	lon = ( event.clientX - onPointerDownPointerX ) * 0.1 + onPointerDownLon;
+	lat = ( event.clientY - onPointerDownPointerY ) * 0.1 + onPointerDownLat;
+
+}
+
+function onDocumentMouseUp( event ) {
+
+	document.removeEventListener( 'mousemove', onDocumentMouseMove, false );
+	document.removeEventListener( 'mouseup', onDocumentMouseUp, false );
+
+}
+
+function onDocumentMouseWheel( event ) {
+
+	var fov = camera.fov + event.deltaY * 0.05;
+
+	camera.fov = THREE.Math.clamp( fov, 10, 75 );
+
+	camera.updateProjectionMatrix();
+
+}
+
+document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+document.addEventListener( 'wheel', onDocumentMouseWheel, false );
+window.addEventListener( 'resize', onWindowResized, false );
