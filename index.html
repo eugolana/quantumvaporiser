@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		    <link rel="stylesheet" href="./css/style.css">
+		    <script id="simpleVertexShader" type="x-shader/x-vertex">
+		    	uniform float time;
+		    	varying vec2 vUv;
+
+		    	void main(){
+		    		vUv = uv;
+		    		gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+		    	}
+		    </script>
+
+
+		    <script id="waveShader" type="x-shader/x-fragment">
+
+				uniform vec2 resolution;
+				uniform float time;
+				uniform float a1;
+				uniform float a2;
+				uniform float a3;
+				uniform float a4;
+
+				varying vec2 vUv;
+
+				vec2 start1 = vec2(0.0,0.5);
+				vec2 end1 = vec2(1.,0.5);
+
+				vec2 start2 = vec2(1.,0.);
+				vec2 end2 = vec2(0.0,1.);
+
+				mat2 rotate2d(float _angle){
+				    return mat2(cos(_angle),-sin(_angle),
+				                sin(_angle),cos(_angle));
+				}
+
+				float soundLine(vec2 start, vec2 end, vec2 st, float frequency, float amp, float phase, float width){
+				    float c;
+				    vec2 delta = end - start;
+				    mat2 rotation = rotate2d( -atan(delta.y, delta.x));
+				    st *= rotation;
+				    start *= rotation;
+				    end *= rotation;
+				    st -= start;
+				    float y = sin((st.x) * frequency + phase) * amp;
+				    y = mix(y, 0., pow(st.x / (end.x - start.x),4.));
+				    y = mix( 0.,y, pow( st.x, 0.5));
+					c = (smoothstep( y - width, y, st.y) - smoothstep(y , y + width, st.y)) ;
+				    c = step(0.,st.x ) * c;
+				    c = step(st.x, end.x - start.x) * c;
+				    return c;     
+				}
+
+				vec4 compositColors(vec4 c1, vec4 c2){
+					vec3 rgb1 = vec3(c1.r, c1.g, c1.b);
+					vec3 rgb2 = vec3(c2.r, c2.g, c2.b);
+					float a1 = c1.a;
+					float a2 = c2.a;
+					float a3 = a1 + (a2 * (1.0 - a1));
+					return vec4(((rgb1 * a1) + (rgb2 * a2 * (1.  - a1)) / a3), a3);
+				}
+
+				vec4 tripleWave(vec2 start,vec2 end, vec2 st, float a1, float a2, float a3) {
+					float width = 0.01;
+				    vec4 newColor;
+				    float newA;
+				    newA = soundLine(start, 
+								    	end, 
+								    	st, 
+								    	32., 
+								    	a1, 
+										time , 
+										width);
+				    newColor =  vec4(1.0,0.0,0., newA/3.);
+
+				    newA = soundLine(start, 
+										end, 
+										st, 
+										64., 
+										a2 , 
+										time, 
+										width);
+
+				    newColor = compositColors( vec4(0., 1., 0., newA/3.), newColor);
+
+				    newA = soundLine(start, 
+										end, 
+										st, 
+										128., 
+										a3 , 
+										time, 
+										width);
+
+				    newColor = compositColors( vec4(0., 0., 1., newA/3.), newColor);
+
+				    return newColor;
+				}
+
+
+				void main() {
+				    vec4 c = gl_FragColor;
+				    vec2 st = vUv;
+					vec4 color = vec4(1., 1., 1., 0.);
+				    vec4 wav = tripleWave(start1, end1, st, a1, a2, a3);
+				    gl_FragColor = wav;
+				}
+			</script>
+
+			<script id="checkedShader" type="x-shader/x-fragment">
+				uniform vec2 resolution;
+				uniform float time;
+
+				varying vec2 vUv;
+
+
+				void main() {
+					vec3 color = vec3(0.,0.,0.);
+				    vec2 st = vUv;
+				    color = vec3(1.0,1.,1.) * mod(
+				    	step(0.05,  mod(st.x, 0.1)) + step(0.05, mod(st.y, 0.1))
+				    	,2.);
+				    color = mix(color, vec3(0.5), smoothstep(0.0005,0.00, mod(st.x, 0.05)));
+				    color = mix(color, vec3(0.5), smoothstep(0.049,0.05, mod(st.x, 0.05)));
+				    color = mix(color, vec3(0.5), smoothstep(0.0005,0.00, mod(st.y, 0.05)));
+				    color = mix(color, vec3(0.5), smoothstep(0.049,0.05, mod(st.y, 0.05)));
+				    color = min(color, 1.);
+				    gl_FragColor = vec4(color, 1.0);
+				}
+			</script>
+
+			<script id="cloudShader" type="x-shader/x-fragment">	
+				uniform vec2 resolution;
+				uniform float time;
+				uniform vec3 skyColor;
+				uniform float cloudCover;
+
+
+				varying vec2 vUv;
+
+				float random (vec2 st) {
+				    return fract(sin(dot(st.xy,
+				                         vec2(12.9898,78.2322)))*
+				        49999.);
+				}
+
+				float noisex(vec2 ipos, vec2 fpos){
+				    float a = random(ipos);
+				    float b = random(ipos + vec2(1.,0));
+				    float c = random(ipos + vec2(0.,1.));
+				    float d = random(ipos + vec2(1.,1.));
+					vec2 f = smoothstep(0.,1., fpos);
+				    
+				    return mix(a,b,f.x) + (c-a) * f.y * (1.0 - f.x) + ( d - b ) * f.x *f.y;
+				}
+
+				float perlinise(vec2 st, float size){
+				    vec2 _st = size * st;
+					vec2 ipos = floor(_st);
+				    vec2 fpos = fract(_st);
+				    return noisex(ipos,fpos);
+				}
+
+				void main() {
+					vec3 cloudColor = vec3(1., 1., 1.);
+				    vec2 st = vUv;
+				    vec3 color = skyColor;
+				    vec2 timeshift = vec2(time * 0.04,0);
+				    st += timeshift;
+					float red = -1.*(1.-skyColor.r) + (cloudCover);
+				    red += perlinise(st, 16.) * 0.492;
+				    red += perlinise(st, 32.) * 0.25;
+				    st += timeshift * 0.5;
+				    red += perlinise(st, 64.) * 0.125;
+				    red += perlinise(st, 128.) * 0.0625;
+					red += perlinise(st, 256.) * 0.0625;
+					vec3 clouds = cloudColor * red;
+				    color = vec3(max(skyColor.r,clouds.r), max(skyColor.g,clouds.g),max(skyColor.b, clouds.b));
+				    gl_FragColor = vec4(color,1.0);
+				}
+			</script>
+
+
+	        <script src="./scripts/three.js"></script>
+	</head>
+	<body>
+		<canvas id="myCanvas"></canvas>
+		    <script src="./scripts/main.js"></script>
+	</body>
+</html>
