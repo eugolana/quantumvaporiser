@@ -152,11 +152,11 @@
 				        49999.);
 				}
 
-				float noisex(vec2 ipos, vec2 fpos){
-				    float a = random(ipos);
-				    float b = random(ipos + vec2(1.,0));
-				    float c = random(ipos + vec2(0.,1.));
-				    float d = random(ipos + vec2(1.,1.));
+				float noisex(vec2 ipos, vec2 fpos, float size){
+				    float a = random(mod(ipos, size));
+				    float b = random(mod(ipos + vec2(1.,0), size ));
+				    float c = random(mod(ipos + vec2(0.,1.), size));
+				    float d = random(mod(ipos + vec2(1.,1.), size));
 					vec2 f = smoothstep(0.,1., fpos);
 				    
 				    return mix(a,b,f.x) + (c-a) * f.y * (1.0 - f.x) + ( d - b ) * f.x *f.y;
@@ -166,7 +166,7 @@
 				    vec2 _st = size * st;
 					vec2 ipos = floor(_st);
 				    vec2 fpos = fract(_st);
-				    return noisex(ipos,fpos);
+				    return noisex(ipos,fpos, size);
 				}
 
 				void main() {
@@ -175,7 +175,7 @@
 				    vec3 color = skyColor;
 				    vec2 timeshift = vec2(time * 0.04,0);
 				    st += timeshift;
-					float red = -1.*(1.-skyColor.r) + (cloudCover);
+					float red = -1.*(1.-skyColor.r) + (0.1 + cloudCover);
 				    red += perlinise(st, 16.) * 0.492;
 				    red += perlinise(st, 32.) * 0.25;
 				    st += timeshift * 0.5;

@@ -156,6 +156,8 @@ var skySphere = new THREE.Mesh(skySphereGeometry, skySphereMaterial);
 
 scene.add(skySphere);
 
+skySphere.rotation.y = Math.PI * 200 /180;
+
 
 // Add Floor
 var floorGeometry = new THREE.BoxGeometry(700,5,700)
