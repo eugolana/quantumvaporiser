@@ -110,7 +110,8 @@
 				    vec2 st = vUv;
 					vec4 color = vec4(1., 1., 1., 0.);
 				    vec4 wav = tripleWave(start1, end1, st, a1, a2, a3);
-				    gl_FragColor = wav;
+				    gl_FragColor = mix(c,wav, 0.9);
+				    // gl_FragColor = wav;
 				}
 			</script>
 

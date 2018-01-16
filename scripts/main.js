@@ -29,7 +29,7 @@ var handleDragOver = function(e) {
 var handleDrop = function(e) {
     e.preventDefault();
     e.stopPropagation();
-
+    document.getElementById('instructions').innerHTML = "<p>Loading Audio...</p>";
     var files = e.dataTransfer.files;
     for (var i = 0; i < files.length; i++) {
         var file = files[i];
@@ -92,7 +92,8 @@ var waveShader = new THREE.ShaderMaterial({
 	vertexShader: document.getElementById('simpleVertexShader').innerHTML,
 	fragmentShader: document.getElementById('waveShader').innerHTML,
 	transparent: true,
-	side: THREE.DoubleSide
+	opacity: 0.7,
+	side: THREE.DoubleSide,
 });
 
 sphereCamera = new THREE.CubeCamera( 1, 1000, 256);
@@ -142,6 +143,13 @@ camera.lookAt(sphere.position);
 
 scene.add(camera);
 
+var backgroundGeometry = new THREE.BoxGeometry(10000,10000,10000);
+var backgroundMaterial = new THREE.MeshBasicMaterial({color: 0xffffff});
+
+var background = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
+
+scene.add(background);
+
 // Add Skysphere 
 var skySphereGeometry = new THREE.SphereGeometry(900, 50, 50);
 
@@ -158,10 +166,21 @@ var skySphereMaterial = new THREE.ShaderMaterial({
 	vertexShader: document.getElementById('simpleVertexShader').innerHTML,
 	fragmentShader: document.getElementById('cloudShader').innerHTML,
 	side: THREE.BackSide,
+	transparent: true,
+	opacity: 0.2
+});
+
+var skyLightMaterial = new THREE.MeshPhongMaterial({ 
+	side: THREE.BackSide, 
+	shininess: 0,
+	emisive: 0xccccff,
+	emissiveIntensity: 2.6,
+	transparent: true,
+	blending: THREE.MultiplyBlending,
 });
 
 
-var skySphere = new THREE.Mesh(skySphereGeometry, skySphereMaterial);
+var skySphere = new THREE.SceneUtils.createMultiMaterialObject(skySphereGeometry, [skySphereMaterial, skyLightMaterial]);
 
 scene.add(skySphere);
 
@@ -171,42 +190,69 @@ skySphere.rotation.y = Math.PI * 200 /180;
 // Add Floor
 var floorGeometry = new THREE.BoxGeometry(700,5,700)
 
+var floorUniforms = {
+	time: {type: "f", value: 0}
+}
+
+var floorLightMaterial = new THREE.MeshPhongMaterial({ 
+	// color: THREE.NoColors, 
+	side: THREE.FrontSide, 
+	shininess: 300,
+	transparent: true,
+	blending: THREE.MultiplyBlending,
+});
+
 var checkedMaterial = new THREE.ShaderMaterial({
-	uniforms: skyUniforms,
+	uniforms: floorUniforms,
 	vertexShader: document.getElementById('simpleVertexShader').innerHTML,
 	fragmentShader: document.getElementById('checkedShader').innerHTML,
 })
 
-var simpleMaterial = new THREE.MeshBasicMaterial({color: 0x444444});
+// var lightMaterial = new THREE.ShaderMaterial({
+// 	uniforms: lightUniforms,
+// 	vertexShader: document.getElementById('simpleVertexShader').innerHTML,
+// 	fragmentShader: document.getElementById('lightShader').innerHTML,
+// 	// lights: true
+// })
 
-var floorMaterials = [
-	simpleMaterial,
-	simpleMaterial,
-	checkedMaterial,
-	simpleMaterial,
-	simpleMaterial,
-	simpleMaterial,
-]
 
-var floorbox = new THREE.Mesh(floorGeometry, floorMaterials);
+
+// var simpleMaterial = new THREE.MeshBasicMaterial({color: 0x444444});
+
+// var floorMaterials = [
+// 	simpleMaterial,
+// 	simpleMaterial,
+// 	checkedMaterial,
+// 	simpleMaterial,
+// 	simpleMaterial,
+// 	simpleMaterial,
+// ]
+
+var lambert
+
+var floorbox = THREE.SceneUtils.createMultiMaterialObject( floorGeometry, [checkedMaterial, floorLightMaterial] )
+
+// var floorbox = new THREE.Mesh(floorGeometry, floorMaterials);
 floorbox.position.y -= 150;
 scene.add(floorbox)
 
 // Add Light
-var pointLight = new THREE.PointLight(0xddddff,);
+var pointLight = new THREE.PointLight(0xffffcc, 2, 3000, 0.2);
 pointLight.position.set(20, 600, 600);
- 
+
 scene.add(pointLight);
 
 var bass; var mids; var treble;
 
 var rotation_delta = 0;
+var lightDelta = 0;
+var cloudDelta = 0;
 
 function render() {
 
-	bass = sumSpectrum(spectrum.subarray(0,64))/255;
-	mids = sumSpectrum(spectrum.subarray(64, 512))/255;
-	treble = sumSpectrum(spectrum.subarray(512, 1024))/255
+	bass = sumSpectrum(spectrum.subarray(0,32))/255;
+	mids = sumSpectrum(spectrum.subarray(32, 256))/255;
+	treble = sumSpectrum(spectrum.subarray(256, 1024))/255
 
 	sphere.visible = false;
 	sphereCamera.update( renderer, scene );
@@ -223,7 +269,10 @@ function render() {
 	rotation_delta = rotation_delta * 0.9 + ( 0.1 * mids/120)
 	floorbox.rotation.y += rotation_delta;
 	skyUniforms.time.value += (delta / 4.) * ( 1 + bass * 4 ) ;
-	skyUniforms.cloudCover.value = (skyUniforms.cloudCover.value + (0.05 * mids  )) / 1.05;
+
+	cloudDelta = ((bass - 0.2) - skyUniforms.cloudCover.value) / 5;
+
+	skyUniforms.cloudCover.value += cloudDelta;
 
 	delta *= bass/ 100000;
 	uniforms.time.value += delta;
@@ -234,6 +283,9 @@ function render() {
 	camera.position.x = 900 * Math.sin( phi ) * Math.cos( theta );
 	camera.position.y = 900 * Math.cos( phi );
 	camera.position.z = 900 * Math.sin( phi ) * Math.sin( theta );
+
+	lightDelta = (lightDelta * 0.99) + (0.01 * (mids - 0.1)) ;
+	pointLight.intensity  = Math.min(Math.max(pointLight.intensity +  lightDelta, 0.8), 4);
 
 	camera.lookAt( sphere.position )
 
